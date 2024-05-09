@@ -36,7 +36,7 @@ public class MessageReceiveService {
 	public String recv() {
 		try {
 			String msg = jmsTemplate.receiveAndConvert(queue).toString();
-			return "{ \"message\" : \"Message Received: " + msg + "\" }";
+			return msg;
 		} catch (JmsException ex) {
 			ex.printStackTrace();
 			return "{ \"message\" : \"Error on receiving the message\" }";

@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.proxyrestmq.services.Response;
+
 @RestController
 public class Controller {
 
@@ -42,7 +44,7 @@ public class Controller {
 	}
 
 	@GetMapping("recv")
-	public String recv() {
-		return messageReceiveService.recv();
+	public Response recv() {
+		return new Response(messageReceiveService.recv(), "");
 	}
 }
