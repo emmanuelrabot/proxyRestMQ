@@ -17,6 +17,9 @@
 package com.proxyrestmq.services;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import jakarta.jms.Message;
 
@@ -32,38 +35,47 @@ import org.springframework.beans.factory.annotation.Value;
 @Service
 public class MessageSendService {
 
+	Logger logger = Logger.getLogger(MessageSendService.class.getName());
+
 	private final JmsTemplate jmsTemplate;
 
 	@Value("${ibm.mq.sendqueue}")
-	private String queue;
+	private String sendQueue;
+
+	// @Value("${ibm.mq.recvqueue}")
+	@Value("${ibm.mq.sendqueue}")
+	private String recvQeue;
+
+	@Value("5000")
+	private String recvtimeout;
 
 	public MessageSendService(JmsTemplate jmsTemplate) {
 		this.jmsTemplate = jmsTemplate;
+		logger.setLevel(Level.FINE);
+		logger.log(Level.CONFIG, "!!!!!!!!!! recvtimeout: " + recvtimeout + "!!!!!!!!!!!!!!!!!");
+		// this.jmsTemplate.setReceiveTimeout(Long.parseLong(recvtimeout));
 	}
 
 	public String send(String message) {
 		try {
-			final String correlationId = UUID.randomUUID().toString();
-			jmsTemplate.convertAndSend(queue, message, new CorrelationIdPostProcessor(correlationId));
-			return "{ \"message\" : \"Message Sent: " + message + "\" }";
+			final AtomicReference<Message> jmsMessage = new AtomicReference<>();
+
+			jmsTemplate.convertAndSend(sendQueue, message, messagePostProcessor -> {
+				jmsMessage.set(messagePostProcessor);
+				return messagePostProcessor;
+			});
+
+			String messageId = jmsMessage.get().getJMSMessageID();
+
+			Object msgRaw = jmsTemplate.receiveSelectedAndConvert(recvQeue, "JMSCorrelationID = '" + messageId + "'");
+			return msgRaw.toString();
+
 		} catch (JmsException ex) {
 			ex.printStackTrace();
 			return "{ \"message\" : \"Some errors occured on sending the message: " + message + "\" }";
-		}
-	}
-
-	private class CorrelationIdPostProcessor implements MessagePostProcessor {
-		private final String correlationId;
-
-		public CorrelationIdPostProcessor(final String correlationId) {
-			this.correlationId = correlationId;
-		}
-
-		@Override
-		public Message postProcessMessage(final Message msg)
-				throws JMSException {
-			msg.setJMSCorrelationID(correlationId);
-			return msg;
+		} catch (JMSException ex) {
+			ex.printStackTrace();
+			return "{ \"message\" : \"Some errors occured on sending the message: " + message + "\" }";
 		}
 	}
 }

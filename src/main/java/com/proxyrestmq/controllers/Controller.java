@@ -18,13 +18,22 @@ package com.proxyrestmq.controllers;
 
 import com.proxyrestmq.services.MessageSendService;
 import com.proxyrestmq.services.MessageReceiveService;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 
 import com.proxyrestmq.services.Response;
+import com.proxyrestmq.services.Request;
 
 @RestController
 public class Controller {
@@ -32,19 +41,13 @@ public class Controller {
 	private final MessageSendService messageSendService;
 	private final MessageReceiveService messageReceiveService;
 
-	@Autowired
 	public Controller(MessageSendService messageSendService, MessageReceiveService messageReceiveService) {
 		this.messageSendService = messageSendService;
 		this.messageReceiveService = messageReceiveService;
 	}
 
-	@GetMapping("send")
-	public String send(@RequestParam("msg") String msg) {
-		return messageSendService.send(msg);
-	}
-
-	@GetMapping("recv")
-	public Response recv() {
-		return new Response(messageReceiveService.recv(), "");
+	@PostMapping("send")
+	public String postController(@RequestBody Request request) {
+		return messageSendService.send(request.getMsg());
 	}
 }

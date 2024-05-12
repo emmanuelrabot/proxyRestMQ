@@ -31,12 +31,13 @@ public class MessageReceiveService {
 
 	public MessageReceiveService(JmsTemplate jmsTemplate) {
 		this.jmsTemplate = jmsTemplate;
+		this.jmsTemplate.setReceiveTimeout(5000L);
 	}
 
 	public String recv() {
 		try {
-			String msg = jmsTemplate.receiveAndConvert(queue).toString();
-			return msg;
+			Object msgRaw = jmsTemplate.receiveAndConvert(queue);
+			return msgRaw.toString();
 		} catch (JmsException ex) {
 			ex.printStackTrace();
 			return "{ \"message\" : \"Error on receiving the message\" }";
